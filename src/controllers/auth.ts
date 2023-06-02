@@ -18,14 +18,23 @@ export const signIn = (req: Request, res: Response) => {
   user
     .findOne({ email: req.body.email })
     .then(async (response) => {
-      const bcryptResponse = await bcrypt.compare(req.body.password, response.password)
+      if (response) {
+        if (response.password) {
+          const bcryptResponse = await bcrypt.compare(req.body.password, response.password)
 
-      if (bcryptResponse) {
-        res.json({
-          access_token: response.access_token,
-          refresh_token: response.refresh_token
-        });
+          if (bcryptResponse) {
+            res.json({
+              access_token: response.access_token,
+              refresh_token: response.refresh_token
+            });
+          }
+          return
+        }
       }
+
+      res.json({
+        message: 'Something went wrong/'
+      });
     })
 };
 
@@ -65,7 +74,7 @@ export const getUserInfo = (req: Request, res: Response) => {
 
   const splitted = bearerToken.split(' ')
 
-  if(splitted.length !== 2) {
+  if (splitted.length !== 2) {
     res.json({
       message: "Something went wrong."
     })
@@ -74,8 +83,8 @@ export const getUserInfo = (req: Request, res: Response) => {
   user
     .findOne({ access_token: splitted[1] })
     .then(async (response) => {
-        console.log(response);
-        
+      console.log(response);
+
       if (response) {
         res.json({
           email: response.email,

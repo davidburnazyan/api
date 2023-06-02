@@ -18,27 +18,37 @@ export const Create = async (req: Request, res: Response) => {
     let lastCreatedGroup = await WordGroupModal
       .findOne().limit(1).sort({ $natural: -1 })
 
-    if (lastCreatedGroup.length === 0) {
+    if (lastCreatedGroup) { // lastCreatedGroup.length === 0
       lastCreatedGroup = await WordGroupModal.create({ name: 1 })
     }
 
-    const wordsByGroup = await WordModal.find({ group: lastCreatedGroup._id })
+    if (lastCreatedGroup) {
+      const wordsByGroup = await WordModal.find({ group: lastCreatedGroup._id })
 
-    if (wordsByGroup.length >= 1) {
-      // Why 10 because start from 0
-      const groupsCount = await WordGroupModal.countDocuments()
-      lastCreatedGroup = await WordGroupModal.create({ name: groupsCount + 1 })
+      if (wordsByGroup.length >= 1) {
+        // Why 10 because start from 0
+        const groupsCount = await WordGroupModal.countDocuments()
+        lastCreatedGroup = await WordGroupModal.create({ name: groupsCount + 1 })
+      }
     }
 
-    const response = await WordModal.create({
-      en: req.body.en,
-      arm: req.body.arm,
-      group: lastCreatedGroup._id
-    });
+
+
+    if (lastCreatedGroup) {
+      const response = await WordModal.create({
+        en: req.body.en,
+        arm: req.body.arm,
+        group: lastCreatedGroup._id
+      });
+
+      return res.json({
+        message: 'Word successfully added.',
+        response,
+      });
+    }
 
     return res.json({
-      message: 'Word successfully added.',
-      response,
+      message: 'Something went wrong',
     });
   } catch (err) {
     res.json({ message: 'Something went wrong' });
@@ -113,13 +123,19 @@ export const ReadByGroup = async (req: Request, res: Response) => {
     const lastCreatedGroup = await WordGroupModal
       .findOne().limit(1).sort({ $natural: -1 })
 
-    const wordsByGroup = await WordModal.find({ group: lastCreatedGroup._id })
+    if (lastCreatedGroup) {
+      const wordsByGroup = await WordModal.find({ group: lastCreatedGroup._id })
+
+      return res.json({
+        group: {
+          name: lastCreatedGroup.name,
+          words: wordsByGroup
+        }
+      });
+    }
 
     return res.json({
-      group: {
-        name: lastCreatedGroup.name,
-        words: wordsByGroup
-      }
+      message: 'Something went wrong',
     });
   } catch (err) {
     res.json({ message: 'Something went wrong' });
